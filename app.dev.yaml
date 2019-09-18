@@ -1,0 +1,7 @@
+appname: filestore-server
+addr: :8989
+mysql:
+  dsn: "root:root@tcp(120.78.186.249:3307)/filestore?parseTime=true"
+redis:
+  addr: ''
+  db: 0
