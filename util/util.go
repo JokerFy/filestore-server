@@ -68,3 +68,12 @@ func GetFileSize(filename string) int64 {
 	})
 	return result
 }
+
+/*func ErrorHandler(w http.ResponseWriter, msg string)  {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Println("got error: ", r)
+			RespFail(w,"失敗")
+		}
+	}()
+}*/

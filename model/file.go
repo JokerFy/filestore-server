@@ -1,7 +1,6 @@
 package model
 
 import (
-	"filestore-server/db"
 	"time"
 )
 
@@ -20,11 +19,4 @@ type File struct {
 	Status   int       `gorm:"int(11)" form:"status" json:"status"`
 	Ext1     int       `gorm:"int(11)" form:"ext1" json:"ext1"`
 	Ext2     int       `gorm:"int(11)" form:"ext2" json:"ext2"`
-}
-
-func (file *File) GetFileBySha1() (info File, err error) {
-	if err = db.Eloquent.Where(&file).First(&info).Error; err != nil {
-		return
-	}
-	return
 }

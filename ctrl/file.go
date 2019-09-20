@@ -1,10 +1,6 @@
-package handler
+package ctrl
 
 import (
-	"encoding/json"
-	"filestore-server/db"
-	"filestore-server/meta"
-	"filestore-server/model"
 	"filestore-server/service"
 	"filestore-server/util"
 	"fmt"
@@ -12,8 +8,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"strconv"
-	"time"
 )
 
 var fileService service.FileService
@@ -35,31 +29,29 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		defer file.Close()
-		fileSave := model.File{
-			FileName: head.Filename,
-			FileAddr: "./tmp/" + head.Filename,
-			CreateAt: time.Now(),
-			UpdateAt: time.Now(),
-		}
 
-		newFile, err := os.Create(fileSave.FileAddr)
+		fileAddr := "./tmp/" + head.Filename
+		newFile, err := os.Create(fileAddr)
+
 		if err != nil {
-			fmt.Printf("Failed to create file,err:%s\n", err.Error())
+			util.RespFail(w, "Failed to create file,err:"+err.Error())
 			return
 		}
 		defer newFile.Close()
-
-		fileSave.FileSize, err = io.Copy(newFile, file)
-
+		fileSize, err := io.Copy(newFile, file)
 		if err != nil {
-			fmt.Printf("Failed to save data into file,err:%s\n", err.Error())
+			util.RespFail(w, "Failed to save data into file,err:"+err.Error())
 			return
 		}
 
 		newFile.Seek(0, 0)
 
-		fileSave.FileSha1 = util.FileSha1(newFile)
-		db.Eloquent.Debug().Create(&fileSave)
+		fileSha1 := util.FileSha1(newFile)
+		_, err = fileService.UploadFile(head.Filename, fileSize, fileSha1, fileAddr)
+		if err != nil {
+			util.RespFail(w, "Failed to save data to mysql,err:"+err.Error())
+			return
+		}
 
 		http.Redirect(w, r, "/file/upload/suc", http.StatusFound)
 	}
@@ -74,41 +66,31 @@ func GetFileMetaHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	fileSha1 := r.Form["filehash"][0]
 	fileInfo, err := fileService.GetFileBySha1(fileSha1)
-	data, err := json.Marshal(fileInfo)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		util.RespFail(w, "文件不存在")
 		return
 	}
-	w.Write(data)
-}
-
-func FileQueryHandler(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-
-	limitCnt, _ := strconv.Atoi(r.Form.Get("limit"))
-	fileMetas := meta.GetLastFileMetas(limitCnt)
-	data, err := json.Marshal(fileMetas)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	w.Write(data)
+	util.RespOk(w, fileInfo, "文件查询成功")
 }
 
 func DownloadHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	fsha1 := r.Form.Get("filehash")
-	fm := meta.GetFileMeta(fsha1)
-	f, err := os.Open(fm.Location)
+	fm, err := fileService.GetFileBySha1(fsha1)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		util.RespFail(w, "文件不存在")
+		return
+	}
+	f, err := os.Open(string(fm.FileAddr))
+	if err != nil {
+		util.RespFail(w, "文件打开失败")
 		return
 	}
 	defer f.Close()
 
 	data, err := ioutil.ReadAll(f)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		util.RespFail(w, "文件读取失败")
 		return
 	}
 
