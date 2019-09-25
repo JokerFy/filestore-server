@@ -2,6 +2,7 @@ package util
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 )
@@ -13,6 +14,19 @@ type H struct {
 	Rows  interface{} `json:"rows,omitempty"`
 	Total interface{} `json:"total,omitempty"`
 }
+
+// 故事列表数据
+/*type DataListStory struct {
+	List  [] `json:"list"`
+	Total int64   `json:"total"`
+}
+
+// 故事Response
+type RespListStory struct {
+	Rtn  int           `json:"rtn"`  //  0: 请求成功, 1:请求失败 -1: 需要登录
+	Msg  string        `json:"msg"`  // 错误原因
+	Data DataListStory `json:"data"` // 返回结果
+}*/
 
 /*func ThrowError(w http.ResponseWriter,err error){
 	defer func() {
@@ -35,6 +49,7 @@ func RespOk(w http.ResponseWriter, data interface{}, msg string) {
 }
 
 func RespOkList(w http.ResponseWriter, lists interface{}, total interface{}) {
+	fmt.Println(lists)
 	//分页数目,
 	RespList(w, 0, lists, total)
 }

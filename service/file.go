@@ -35,3 +35,21 @@ func (file *FileService) UploadFile(fileName string, fileSize int64, fileSha1 st
 	}
 	return
 }
+
+func (file *FileService) FileList() (res []model.File, err error) {
+	fileSave := model.File{}
+	orm := db.Eloquent
+	if err = orm.Debug().Where(&fileSave).Order("create_at desc").Find(&res).Error; err != nil {
+		return
+	}
+	return
+}
+
+//统计
+func (file *FileService) Count() (total int64, err error) {
+	fileSave := model.File{}
+	if err = db.Eloquent.Find(&fileSave).Count(&total).Error; err != nil {
+		return
+	}
+	return
+}

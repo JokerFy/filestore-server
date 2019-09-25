@@ -3,6 +3,7 @@ package ctrl
 import (
 	"filestore-server/service"
 	"filestore-server/util"
+	"filestore-server/validator"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -11,6 +12,8 @@ import (
 )
 
 var fileService service.FileService
+var FileValidate validator.FileValidate
+var vErr bool
 
 func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
@@ -63,9 +66,16 @@ func UploadSucHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetFileMetaHandler(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-	fileSha1 := r.Form["filehash"][0]
-	fileInfo, err := fileService.GetFileBySha1(fileSha1)
+	_ = r.ParseForm()
+	var params = validator.FileQueryStruct{}
+	fmt.Println()
+	params.FileSha1 = r
+	vErr = FileValidate.QueryValidate(w, params)
+	if vErr {
+		return
+	}
+
+	fileInfo, err := fileService.GetFileBySha1(params.FileSha1)
 	if err != nil {
 		util.RespFail(w, "文件不存在")
 		return
